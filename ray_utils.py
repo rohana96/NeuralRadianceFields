@@ -14,11 +14,11 @@ from pytorch3d.renderer.cameras import CamerasBase
 
 class RayBundle(object):
     def __init__(
-        self,
-        origins,
-        directions,
-        sample_points,
-        sample_lengths,
+            self,
+            origins,
+            directions,
+            sample_points,
+            sample_lengths,
     ):
         self.origins = origins
         self.directions = directions
@@ -60,14 +60,14 @@ class RayBundle(object):
     def _replace(self, **kwargs):
         for key in kwargs.keys():
             setattr(self, key, kwargs[key])
-        
+
         return self
 
 
 # Sample image colors from pixel values
 def sample_images_at_xy(
-    images: torch.Tensor,
-    xy_grid: torch.Tensor,
+        images: torch.Tensor,
+        xy_grid: torch.Tensor,
 ):
     batch_size = images.shape[0]
     spatial_size = images.shape[1:-1]
@@ -85,40 +85,51 @@ def sample_images_at_xy(
 
 
 # Generate pixel coordinates from in NDC space (from [-1, 1])
-def get_pixels_from_image(image_size, camera):
+def get_pixels_from_image(image_size, camera=None):
     W, H = image_size[0], image_size[1]
 
     # TODO (1.3): Generate pixel coordinates from [0, W] in x and [0, H] in y
-    pass
+    x = torch.linspace(start=0, end=W, steps=W + 1)
+    y = torch.linspace(start=0, end=H, steps=H + 1)
 
     # TODO (1.3): Convert to the range [-1, 1] in both x and y
-    pass
+    grid_x = (2 / W) * x - 1.0
+    grid_y = (2 / H) * y - 1.0
 
     # Create grid of coordinates
-    xy_grid = torch.stack(
-        tuple( reversed( torch.meshgrid(y, x) ) ),
-        dim=-1,
-    ).view(W * H, 2)
+    # xy_grid = torch.stack(
+    #     tuple(reversed(torch.meshgrid(grid_y, grid_x))),
+    #     dim=-1,
+    # ).view(W * H, 2)
+    # return -xy_grid
 
-    return -xy_grid
+    return torch.cartesian_prod(grid_y, grid_x)
+
 
 
 # Random subsampling of pixels from an image
-def get_random_pixels_from_image(n_pixels, image_size, camera):
+def get_random_pixels_from_image(n_pixels, image_size, camera = None):
     xy_grid = get_pixels_from_image(image_size, camera)
-    
+
     # TODO (2.1): Random subsampling of pixel coordinates
-    pass
+
+    perm = torch.randperm(xy_grid.shape[0])
+    idx = perm[:n_pixels]
+    xy_grid_sub = xy_grid[idx]
+    return xy_grid_sub
+    # pass
 
     # Return
-    return xy_grid_sub.reshape(-1, 2)[:n_pixels]
+    # return xy_grid_sub.reshape(-1, 2)[:n_pixels]
 
 
 # Get rays from pixel values
 def get_rays_from_pixels(xy_grid, image_size, camera):
     W, H = image_size[0], image_size[1]
 
+
     # TODO (1.3): Map pixels to points on the image plane at Z=1
+
     pass
 
     ndc_points = torch.cat(
@@ -145,3 +156,17 @@ def get_rays_from_pixels(xy_grid, image_size, camera):
         torch.zeros_like(rays_o).unsqueeze(1),
         torch.zeros_like(rays_o).unsqueeze(1),
     )
+
+
+def test_get_pixels_from_image():
+    print(get_pixels_from_image(image_size=(1, 3)))
+
+def test_get_random_pixels_from_image():
+    n_pixels = 10
+    image_size = (24, 20)
+    print(get_random_pixels_from_image(n_pixels=n_pixels, image_size=image_size))
+
+
+if __name__ == '__main__':
+    # test_get_pixels_from_image()
+    test_get_random_pixels_from_image()

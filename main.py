@@ -43,8 +43,8 @@ from dataset import (
 
 class Model(torch.nn.Module):
     def __init__(
-        self,
-        cfg
+            self,
+            cfg
     ):
         super().__init__()
 
@@ -62,10 +62,10 @@ class Model(torch.nn.Module):
         self.renderer = renderer_dict[cfg.renderer.type](
             cfg.renderer
         )
-    
+
     def forward(
-        self,
-        ray_bundle
+            self,
+            ray_bundle
     ):
         # Call renderer with
         #  a) Implicit volume
@@ -79,11 +79,11 @@ class Model(torch.nn.Module):
 
 
 def render_images(
-    model,
-    cameras,
-    image_size,
-    save=False,
-    file_prefix=''
+        model,
+        cameras,
+        image_size,
+        save=False,
+        file_prefix=''
 ):
     all_images = []
     device = list(model.parameters())[0].device
@@ -91,10 +91,12 @@ def render_images(
     for cam_idx, camera in enumerate(cameras):
         print(f'Rendering image {cam_idx}')
 
+        import pdb
+        pdb.set_trace()
         torch.cuda.empty_cache()
         camera = camera.to(device)
-        xy_grid = get_pixels_from_image(image_size, camera) # TODO (1.3): implement in ray_utils.py
-        ray_bundle = get_rays_from_pixels(xy_grid, image_size, camera) # TODO (1.3): implement in ray_utils.py
+        xy_grid = get_pixels_from_image(image_size, camera)  # TODO (1.3): implement in ray_utils.py
+        ray_bundle = get_rays_from_pixels(xy_grid, image_size, camera)  # TODO (1.3): implement in ray_utils.py
 
         # TODO (1.3): Visualize xy grid using vis_grid
         if cam_idx == 0 and file_prefix == '':
@@ -103,7 +105,7 @@ def render_images(
         # TODO (1.3): Visualize rays using vis_rays
         if cam_idx == 0 and file_prefix == '':
             pass
-        
+
         # TODO (1.4): Implement point sampling along rays in sampler.py
         pass
 
@@ -132,16 +134,17 @@ def render_images(
                 f'{file_prefix}_{cam_idx}.png',
                 image
             )
-    
+
     return all_images
 
 
 def render(
-    cfg,
+        cfg,
 ):
     # Create model
     model = Model(cfg)
-    model = model.cuda(); model.eval()
+    model = model.cuda();
+    model.eval()
 
     # Render spiral
     cameras = create_surround_cameras(3.0, n_poses=20)
@@ -152,11 +155,12 @@ def render(
 
 
 def train(
-    cfg
+        cfg
 ):
     # Create model
     model = Model(cfg)
-    model = model.cuda(); model.train()
+    model = model.cuda();
+    model.train()
 
     # Create dataset 
     train_dataset = dataset_from_config(cfg.data)
@@ -192,7 +196,7 @@ def train(
             camera = camera.cuda()
 
             # Sample rays
-            xy_grid = get_random_pixels_from_image(cfg.training.batch_size, image_size, camera) # TODO (2.1): implement in ray_utils.py
+            xy_grid = get_random_pixels_from_image(cfg.training.batch_size, image_size, camera)  # TODO (2.1): implement in ray_utils.py
             ray_bundle = get_rays_from_pixels(xy_grid, image_size, camera)
             rgb_gt = sample_images_at_xy(image, xy_grid)
 
@@ -229,7 +233,8 @@ def train(
 def create_model(cfg):
     # Create model
     model = Model(cfg)
-    model.cuda(); model.train()
+    model.cuda();
+    model.train()
 
     # Load checkpoints
     optimizer_state_dict = None
@@ -269,7 +274,7 @@ def create_model(cfg):
     # The learning rate scheduling is implemented with LambdaLR PyTorch scheduler.
     def lr_lambda(epoch):
         return cfg.training.lr_scheduler_gamma ** (
-            epoch / cfg.training.lr_scheduler_step_size
+                epoch / cfg.training.lr_scheduler_step_size
         )
 
     lr_scheduler = torch.optim.lr_scheduler.LambdaLR(
@@ -278,8 +283,9 @@ def create_model(cfg):
 
     return model, optimizer, lr_scheduler, start_epoch, checkpoint_path
 
+
 def train_nerf(
-    cfg
+        cfg
 ):
     # Create model
     model, optimizer, lr_scheduler, start_epoch, checkpoint_path = create_model(cfg)
@@ -335,9 +341,9 @@ def train_nerf(
 
         # Checkpoint.
         if (
-            epoch % cfg.training.checkpoint_interval == 0
-            and len(cfg.training.checkpoint_path) > 0
-            and epoch > 0
+                epoch % cfg.training.checkpoint_interval == 0
+                and len(cfg.training.checkpoint_path) > 0
+                and epoch > 0
         ):
             print(f"Storing checkpoint {checkpoint_path}.")
 
@@ -351,8 +357,8 @@ def train_nerf(
 
         # Render
         if (
-            epoch % cfg.training.render_interval == 0
-            and epoch > 0
+                epoch % cfg.training.render_interval == 0
+                and epoch > 0
         ):
             with torch.no_grad():
                 test_images = render_images(
@@ -376,4 +382,3 @@ def main(cfg: DictConfig):
 
 if __name__ == "__main__":
     main()
-
