@@ -127,9 +127,8 @@ def get_rays_from_pixels(xy_grid, image_size=None, camera=None):
     # W, H = image_size[0], image_size[1]
 
     # TODO (1.3): Map pixels to points on the image plane at Z=1
-
-    focal_length = torch.tensor([1.0])
-    ndc_points = xy_grid / focal_length
+    xy_grid = xy_grid.to('cuda')
+    ndc_points = xy_grid /camera.focal_length
 
     ndc_points = torch.cat(
         [
@@ -140,10 +139,8 @@ def get_rays_from_pixels(xy_grid, image_size=None, camera=None):
     )
 
     # TODO (1.3): Use camera.unproject to get world space points on the image plane from NDC space points
-    # world_points = camera.unproject(ndc_points)
-
-    # return world_points
-
+    world_points = camera.unproject_points(ndc_points)
+    
     # TODO (1.3): Get ray origins from camera center
 
     # TODO (1.3): Get normalized ray directions
