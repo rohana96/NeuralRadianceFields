@@ -91,8 +91,6 @@ def render_images(
     for cam_idx, camera in enumerate(cameras):
         print(f'Rendering image {cam_idx}')
 
-        import pdb
-        pdb.set_trace()
         torch.cuda.empty_cache()
         camera = camera.to(device)
         xy_grid = get_pixels_from_image(image_size, camera)  # TODO (1.3): implement in ray_utils.py

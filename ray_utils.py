@@ -106,9 +106,8 @@ def get_pixels_from_image(image_size, camera=None):
     return torch.cartesian_prod(grid_y, grid_x)
 
 
-
 # Random subsampling of pixels from an image
-def get_random_pixels_from_image(n_pixels, image_size, camera = None):
+def get_random_pixels_from_image(n_pixels, image_size, camera=None):
     xy_grid = get_pixels_from_image(image_size, camera)
 
     # TODO (2.1): Random subsampling of pixel coordinates
@@ -124,13 +123,13 @@ def get_random_pixels_from_image(n_pixels, image_size, camera = None):
 
 
 # Get rays from pixel values
-def get_rays_from_pixels(xy_grid, image_size, camera):
-    W, H = image_size[0], image_size[1]
-
+def get_rays_from_pixels(xy_grid, image_size=None, camera=None):
+    # W, H = image_size[0], image_size[1]
 
     # TODO (1.3): Map pixels to points on the image plane at Z=1
 
-    pass
+    focal_length = torch.tensor([1.0])
+    ndc_points = xy_grid / focal_length
 
     ndc_points = torch.cat(
         [
@@ -141,25 +140,27 @@ def get_rays_from_pixels(xy_grid, image_size, camera):
     )
 
     # TODO (1.3): Use camera.unproject to get world space points on the image plane from NDC space points
-    pass
+    # world_points = camera.unproject(ndc_points)
+
+    # return world_points
 
     # TODO (1.3): Get ray origins from camera center
-    pass
 
     # TODO (1.3): Get normalized ray directions
-    pass
 
     # Create and return RayBundle
-    return RayBundle(
-        rays_o,
-        rays_d,
-        torch.zeros_like(rays_o).unsqueeze(1),
-        torch.zeros_like(rays_o).unsqueeze(1),
-    )
+    # return RayBundle(
+    #     rays_o,
+    #     rays_d,
+    #     torch.zeros_like(rays_o).unsqueeze(1),
+    #     torch.zeros_like(rays_o).unsqueeze(1),
+    # )
+    return ndc_points
 
 
 def test_get_pixels_from_image():
     print(get_pixels_from_image(image_size=(1, 3)))
+
 
 def test_get_random_pixels_from_image():
     n_pixels = 10
@@ -167,6 +168,14 @@ def test_get_random_pixels_from_image():
     print(get_random_pixels_from_image(n_pixels=n_pixels, image_size=image_size))
 
 
+def test_get_rays_from_pixels():
+
+    image_size = (3, 3)
+    xy_grid = get_pixels_from_image(image_size=image_size)
+    print(get_rays_from_pixels(xy_grid=xy_grid))
+
+
 if __name__ == '__main__':
     # test_get_pixels_from_image()
-    test_get_random_pixels_from_image()
+    # test_get_random_pixels_from_image()
+    test_get_rays_from_pixels()
