@@ -87,7 +87,7 @@ def sample_images_at_xy(
 # Generate pixel coordinates from in NDC space (from [-1, 1])
 def get_pixels_from_image(image_size, camera=None):
 
-    W, H = image_size[0], image_size[1]
+    H, W = image_size[0], image_size[1]
 
     # TODO (1.3): Generate pixel coordinates from [0, W] in x and [0, H] in y
     x = torch.linspace(start=0, end=W, steps=W)
@@ -98,6 +98,8 @@ def get_pixels_from_image(image_size, camera=None):
     grid_y = -1.0 * ((2 / H) * y - 1.0)
     # Create grid of coordinates
     xy_grid = torch.cartesian_prod(grid_y, grid_x)
+    print(xy_grid.shape)
+    xy_grid = torch.flip(xy_grid, dims = [1] ) # swap [:, :, 0], [:, :, 1]
     return xy_grid
 
 
@@ -119,7 +121,7 @@ def get_rays_from_pixels(xy_grid, image_size=None, camera=None):
 
     # TODO (1.3): Map pixels to points on the image plane at Z=1
     xy_grid = xy_grid.to('cuda')
-    ndc_points = xy_grid / camera.focal_length
+    ndc_points = xy_grid
 
     ndc_points = torch.cat(
         [
