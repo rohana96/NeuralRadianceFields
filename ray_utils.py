@@ -86,24 +86,19 @@ def sample_images_at_xy(
 
 # Generate pixel coordinates from in NDC space (from [-1, 1])
 def get_pixels_from_image(image_size, camera=None):
+
     W, H = image_size[0], image_size[1]
 
     # TODO (1.3): Generate pixel coordinates from [0, W] in x and [0, H] in y
-    x = torch.linspace(start=0, end=W - 1, steps=W)
-    y = torch.linspace(start=0, end=H - 1, steps=H)
+    x = torch.linspace(start=0, end=W, steps=W)
+    y = torch.linspace(start=0, end=H, steps=H)
 
     # TODO (1.3): Convert to the range [-1, 1] in both x and y
-    grid_x = (2 / W) * x - 1.0
-    grid_y = (2 / H) * y - 1.0
-
+    grid_x = -1.0 * ((2 / W) * x - 1.0)
+    grid_y = -1.0 * ((2 / H) * y - 1.0)
     # Create grid of coordinates
-    # xy_grid = torch.stack(
-    #     tuple(reversed(torch.meshgrid(grid_y, grid_x))),
-    #     dim=-1,
-    # ).view(W * H, 2)
-    # return -xy_grid
-
-    return torch.cartesian_prod(grid_y, grid_x)
+    xy_grid = torch.cartesian_prod(grid_y, grid_x)
+    return xy_grid
 
 
 # Random subsampling of pixels from an image
@@ -116,10 +111,6 @@ def get_random_pixels_from_image(n_pixels, image_size, camera=None):
     idx = perm[:n_pixels]
     xy_grid_sub = xy_grid[idx]
     return xy_grid_sub
-    # pass
-
-    # Return
-    # return xy_grid_sub.reshape(-1, 2)[:n_pixels]
 
 
 # Get rays from pixel values
@@ -128,7 +119,7 @@ def get_rays_from_pixels(xy_grid, image_size=None, camera=None):
 
     # TODO (1.3): Map pixels to points on the image plane at Z=1
     xy_grid = xy_grid.to('cuda')
-    ndc_points = 1.0 * xy_grid / camera.focal_length
+    ndc_points = xy_grid / camera.focal_length
 
     ndc_points = torch.cat(
         [
@@ -142,29 +133,23 @@ def get_rays_from_pixels(xy_grid, image_size=None, camera=None):
     world_points = camera.unproject_points(ndc_points)
 
     # TODO (1.3): Get ray origins from camera center
-    ray_o = camera.get_camera_center().expand((W + 1)*(H + 1), -1, -1, -1)
-
-    # dirs = torch.stack([(i-K[0][2])/K[0][0], -(j-K[1][2])/K[1][1], -torch.ones_like(i)], -1)
-    # # Rotate ray directions from camera frame to the world frame
-    # rays_d = torch.sum(dirs[..., np.newaxis, :] * c2w[:3,:3], -1)  # dot product, equals to: [c2w.dot(dir) for dir in dirs]
-    # # Translate camera frame's origin to the world frame. It is the origin of all rays.
-    # rays_o = c2w[:3,-1].expand(rays_d.shape)
-    # return rays_o,
+    rays_o = camera.get_camera_center().expand(W*H, -1)
 
     # TODO (1.3): Get normalized ray directions
-
+    rays_d = world_points - rays_o
+    rays_d = rays_d/(torch.linalg.norm(rays_d, dim=1).unsqueeze(1))
+    
     # Create and return RayBundle
-    # return RayBundle(
-    #     rays_o,
-    #     rays_d,
-    #     torch.zeros_like(rays_o).unsqueeze(1),
-    #     torch.zeros_like(rays_o).unsqueeze(1),
-    # )
-    return ndc_points
+    return RayBundle(
+        rays_o,
+        rays_d,
+        torch.zeros_like(rays_o).unsqueeze(1),
+        torch.zeros_like(rays_o).unsqueeze(1),
+    )
 
 
 def test_get_pixels_from_image():
-    print(get_pixels_from_image(image_size=(1, 3)))
+    print(get_pixels_from_image(image_size=(3, 3)))
 
 
 def test_get_random_pixels_from_image():

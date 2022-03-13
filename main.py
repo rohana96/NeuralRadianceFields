@@ -35,6 +35,12 @@ from dataset import (
     trivial_collate,
 )
 
+from sampler import StratifiedRaysampler
+
+from render_functions import (
+    render_points
+)
+
 
 # Model class containing:
 #   1) Implicit volume defining the scene
@@ -98,18 +104,24 @@ def render_images(
 
         # TODO (1.3): Visualize xy grid using vis_grid
         if cam_idx == 0 and file_prefix == '':
-            pass
+            image_grid = vis_grid(xy_grid, image_size)
+            plt.imsave('out/1_3/image_grid.png', np.uint8(image_grid * 255))
+
 
         # TODO (1.3): Visualize rays using vis_rays
         if cam_idx == 0 and file_prefix == '':
-            pass
+            ray_grid = vis_rays(ray_bundle, image_size)
+            plt.imsave('out/1_3/ray_grid.png', np.uint8(ray_grid * 255))
 
         # TODO (1.4): Implement point sampling along rays in sampler.py
-        pass
+        points_sampler = StratifiedRaysampler(model.sampler)
+        ray_bundle_with_points = points_sampler.forward(ray_bundle)
+
 
         # TODO (1.4): Visualize sample points as point cloud
         if cam_idx == 0 and file_prefix == '':
-            pass
+            sample_points = ray_bundle_with_points.sample_points.reshape(shape = (-1, 3))
+            rend = render_points('out/1_4/sample_pt_cloud.png', points = sample_points, device = 'cuda')
 
         # TODO (1.5): Implement rendering in renderer.py
         out = model(ray_bundle)
