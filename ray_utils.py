@@ -100,7 +100,7 @@ def get_pixels_from_image(image_size, camera=None):
     xy_grid = torch.cartesian_prod(grid_y, grid_x)
     print(xy_grid.shape)
     xy_grid = torch.flip(xy_grid, dims = [1] ) # swap [:, :, 0], [:, :, 1]
-    return xy_grid
+    return xy_grid.cuda()
 
 
 # Random subsampling of pixels from an image
@@ -112,15 +112,14 @@ def get_random_pixels_from_image(n_pixels, image_size, camera=None):
     perm = torch.randperm(xy_grid.shape[0])
     idx = perm[:n_pixels]
     xy_grid_sub = xy_grid[idx]
-    return xy_grid_sub
+    return xy_grid_sub.cuda()
 
 
 # Get rays from pixel values
 def get_rays_from_pixels(xy_grid, image_size=None, camera=None):
-    W, H = image_size[0], image_size[1]
 
     # TODO (1.3): Map pixels to points on the image plane at Z=1
-    xy_grid = xy_grid.to('cuda')
+    xy_grid = xy_grid.cuda()
     ndc_points = xy_grid
 
     ndc_points = torch.cat(
@@ -135,9 +134,11 @@ def get_rays_from_pixels(xy_grid, image_size=None, camera=None):
     world_points = camera.unproject_points(ndc_points)
 
     # TODO (1.3): Get ray origins from camera center
-    rays_o = camera.get_camera_center().expand(W*H, -1)
+
+    rays_o = camera.get_camera_center().expand(xy_grid.shape[0], -1)
 
     # TODO (1.3): Get normalized ray directions
+
     rays_d = world_points - rays_o
     rays_d = rays_d/(torch.linalg.norm(rays_d, dim=1).unsqueeze(1))
     

@@ -36,6 +36,7 @@ from dataset import (
 )
 
 from sampler import StratifiedRaysampler
+from renderer import VolumeRenderer
 
 from render_functions import (
     render_points
@@ -93,6 +94,7 @@ def render_images(
 ):
     all_images = []
     device = list(model.parameters())[0].device
+    points_sampler = StratifiedRaysampler(model.sampler)
 
     for cam_idx, camera in enumerate(cameras):
         print(f'Rendering image {cam_idx}')
@@ -114,30 +116,26 @@ def render_images(
             plt.imsave('out/1_3/ray_grid.png', np.uint8(ray_grid * 255))
 
         # TODO (1.4): Implement point sampling along rays in sampler.py
-        points_sampler = StratifiedRaysampler(model.sampler)
-        ray_bundle_with_points = points_sampler.forward(ray_bundle)
+        ray_bundle = points_sampler.forward(ray_bundle)
 
 
         # TODO (1.4): Visualize sample points as point cloud
         if cam_idx == 0 and file_prefix == '':
-            sample_points = ray_bundle_with_points.sample_points.reshape(shape = (-1, 3))
+            sample_points = ray_bundle.sample_points.reshape(shape = (-1, 3))
             rend = render_points('out/1_4/sample_pt_cloud.png', points = sample_points, device = 'cuda')
 
         # TODO (1.5): Implement rendering in renderer.py
         out = model(ray_bundle)
 
         # Return rendered features (colors)
-        image = np.array(
-            out['feature'].view(
-                image_size[1], image_size[0], 3
-            ).detach().cpu()
-        )
+        image = np.array(out['feature'].view(image_size[1], image_size[0], 3).detach().cpu())
         all_images.append(image)
 
         # TODO (1.5): Visualize depth
         if cam_idx == 2 and file_prefix == '':
-            pass
-
+            depth_map = np.array(out['depth'].view(image_size[1], image_size[0]).detach().cpu())
+            plt.imsave('out/1_5/depth_map.png', depth_map)
+            
         # Save
         if save:
             plt.imsave(
@@ -214,7 +212,7 @@ def train(
             out = model(ray_bundle)
 
             # TODO (2.2): Calculate loss
-            loss = None
+            loss = torch.linalg.norm(out['feature']- rgb_gt)
 
             # Backprop
             optimizer.zero_grad()
@@ -336,7 +334,7 @@ def train_nerf(
             out = model(ray_bundle)
 
             # TODO (3.1): Calculate loss
-            loss = None
+            loss = torch.linalg.norm(out['feature']- rgb_gt)
 
             # Take the training step.
             optimizer.zero_grad()

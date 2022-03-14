@@ -1,5 +1,6 @@
 import torch
 import torch.nn.functional as F
+import torch.nn as nn
 
 from ray_utils import RayBundle
 
@@ -226,13 +227,60 @@ class NeuralRadianceField(torch.nn.Module):
     ):
         super().__init__()
 
+        self.hidden_dim_xyz = cfg['n_hidden_neurons_xyz']
+        self.hidden_dim_dir = cfg['n_hidden_neurons_dir']
+        self.n_layers_xyz = cfg['n_layers_xyz']
+
         self.harmonic_embedding_xyz = HarmonicEmbedding(3, cfg.n_harmonic_functions_xyz)
         self.harmonic_embedding_dir = HarmonicEmbedding(3, cfg.n_harmonic_functions_dir)
 
-        embedding_dim_xyz = self.harmonic_embedding_xyz.output_dim
-        embedding_dim_dir = self.harmonic_embedding_dir.output_dim
+        self.embedding_dim_xyz = self.harmonic_embedding_xyz.output_dim
+        self.embedding_dim_dir = self.harmonic_embedding_dir.output_dim
 
-        pass
+        self.layer1 = nn.Linear(self.embedding_dim_xyz, cfg.n_hidden_neurons_xyz)
+        self.layer2 = nn.Linear(cfg.n_hidden_neurons_xyz, cfg.n_hidden_neurons_xyz)
+        self.layer3 = nn.Linear(cfg.n_hidden_neurons_xyz, cfg.n_hidden_neurons_xyz)        
+        self.layer4 = nn.Linear(cfg.n_hidden_neurons_xyz, cfg.n_hidden_neurons_xyz)
+        self.layer5 = nn.Linear(cfg.n_hidden_neurons_xyz, cfg.n_hidden_neurons_xyz)        
+        self.layer6 = nn.Linear(cfg.n_hidden_neurons_xyz, cfg.n_hidden_neurons_xyz)
+        self.fc_sigma = nn.Linear(cfg.n_hidden_neurons_xyz, 1)
+
+        self.layer7 = nn.Linear(cfg.n_hidden_neurons_xyz + self.embedding_dim_dir, cfg.n_hidden_neurons_dir)
+        self.layer8 = nn.Linear(cfg.n_hidden_neurons_dir, cfg.n_hidden_neurons_dir)
+        self.layer9 = nn.Linear(cfg.n_hidden_neurons_dir, cfg.n_hidden_neurons_dir)
+        self.fc_rgb = nn.Linear(cfg.n_hidden_neurons_dir, 3)
+        self.relu = nn.ReLU()
+        self.sigmoid = nn.Sigmoid()
+
+    def forward(self, ray_bundle):
+
+        n_rays, n_points, _ = ray_bundle.sample_points.shape
+
+        xyz = ray_bundle.sample_points.view(-1, 3)
+        direction = ray_bundle.directions.repeat(n_points, 1)
+        
+        xyz = self.harmonic_embedding_xyz(xyz)
+        direction = self.harmonic_embedding_dir(direction)
+
+        out = self.relu(self.layer1(xyz))
+        out = self.relu(self.layer2(out))
+        out = self.relu(self.layer3(out))
+        out = self.relu(self.layer4(out))
+        out = self.relu(self.layer5(out))
+        out = self.relu(self.layer6(out))
+        sigma = self.relu(self.fc_sigma(out))
+
+        in_rgb = torch.cat([out, direction], dim = -1)
+        out = self.relu(self.layer7(in_rgb))
+        out = self.relu(self.layer8(out))
+        out = self.relu(self.layer9(out))
+        rgb = self.sigmoid(self.fc_rgb(out))
+
+        out = {
+            'density': sigma,
+            'feature': rgb
+        }
+        return out
 
 
 volume_dict = {

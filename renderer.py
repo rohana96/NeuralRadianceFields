@@ -23,9 +23,14 @@ class VolumeRenderer(torch.nn.Module):
         eps: float = 1e-10
     ):
         # TODO (1.5): Compute transmittance using the equation described in the README
-        pass
+        n_rays, n_points, _ = deltas.shape
+        transmittance = torch.ones_like(rays_density)
+
+        for j in range(1, n_points):
+            transmittance[:, j] = transmittance[:, j-1] * torch.exp(-1.0 * deltas[:, j-1] * rays_density[:, j-1])
 
         # TODO (1.5): Compute weight used for rendering from transmittance and density
+        weights = transmittance.detach() * (1 - torch.exp( -1.0 * rays_density * deltas))
         return weights
     
     def _aggregate(
@@ -34,8 +39,9 @@ class VolumeRenderer(torch.nn.Module):
         rays_feature: torch.Tensor
     ):
         # TODO (1.5): Aggregate (weighted sum of) features using weights
-        pass
-
+        n_rays, n_points, _ = weights.shape
+        rays_feature = rays_feature.reshape(n_rays, n_points, rays_feature.shape[-1])
+        feature = torch.sum(rays_feature*weights, dim = 1)
         return feature
 
     def forward(
@@ -58,6 +64,8 @@ class VolumeRenderer(torch.nn.Module):
 
             # Call implicit function with sample points
             implicit_output = implicit_fn(cur_ray_bundle)
+
+
             density = implicit_output['density']
             feature = implicit_output['feature']
 
@@ -78,10 +86,11 @@ class VolumeRenderer(torch.nn.Module):
             ) 
 
             # TODO (1.5): Render (color) features using weights
-            pass
+            feature = self._aggregate(weights, feature)
 
             # TODO (1.5): Render depth map
-            pass
+            depth = self._aggregate(weights, depth_values.unsqueeze(-1))
+
 
             # Return
             cur_out = {
@@ -105,3 +114,19 @@ class VolumeRenderer(torch.nn.Module):
 renderer_dict = {
     'volume': VolumeRenderer
 }
+
+
+def test_compute_weights():
+    rays_density = torch.rand(size = (3, 4, 1))
+    deltas = torch.rand(size = (3, 4, 1))
+    n_rays, n_points, _ = deltas.shape
+    transmittance = torch.ones_like(rays_density)
+
+    for j in range(1, n_points):
+        transmittance[:, j] = transmittance[:, j-1] * torch.exp(-1.0 * deltas[:, j-1] * rays_density[:, j-1])
+    weights = transmittance * (1 - torch.exp( -1.0 * rays_density * deltas))
+    print(weights.shape)
+
+
+if __name__ == "__main__":
+    test_compute_weights()
