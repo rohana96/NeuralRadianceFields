@@ -225,6 +225,50 @@ class MLPWithInputSkips(torch.nn.Module):
         torch.nn.init.xavier_uniform_(layer.weight.data)
 
 # TODO (3.1): Implement NeRF MLP
+class NeuralRadianceFieldNoView(torch.nn.Module):
+    def __init__(
+        self,
+        cfg,
+    ):
+        super().__init__()
+
+        self.hidden_dim_xyz = cfg['n_hidden_neurons_xyz']
+        self.n_layers_xyz = cfg['n_layers_xyz']
+
+        self.harmonic_embedding_xyz = HarmonicEmbedding(3, cfg.n_harmonic_functions_xyz)
+
+        embedding_dim_xyz = self.harmonic_embedding_xyz.output_dim
+
+        self.encoder = MLPWithInputSkips(n_layers=self.n_layers_xyz, input_dim=embedding_dim_xyz,output_dim=self.hidden_dim_xyz,
+                                            skip_dim=embedding_dim_xyz,hidden_dim=self.hidden_dim_xyz,input_skips=cfg.append_xyz)
+
+        self.fc_sigma = nn.Linear(self.hidden_dim_xyz, 1)
+
+        self.layer7 = nn.Linear(self.hidden_dim_xyz, cfg.n_hidden_neurons_dir)
+
+        self.fc_rgb = nn.Linear(cfg.n_hidden_neurons_dir, 3)
+        self.relu = nn.ReLU()
+        self.sigmoid = nn.Sigmoid()
+
+    def forward(self, ray_bundle):
+
+        n_rays, n_points, _ = ray_bundle.sample_points.shape
+
+        xyz = ray_bundle.sample_points
+        xyz = self.harmonic_embedding_xyz(xyz)
+        out = self.encoder(xyz, xyz)
+        sigma = self.relu(self.fc_sigma(out))
+        out = self.relu(self.layer7(out))
+        rgb = self.sigmoid(self.fc_rgb(out))
+
+        out = {
+            'density': sigma,
+            'feature': rgb
+        }
+        return out
+
+
+# TODO (4.1): Implement NeRF MLP
 class NeuralRadianceField(torch.nn.Module):
     def __init__(
         self,
@@ -282,7 +326,7 @@ class NeuralRadianceField(torch.nn.Module):
         return out
 
 
-# TODO (3.1): Implement NeRF MLP
+# TODO (4.3): Implement NeRF MLP
 class NeuralRadianceFieldHighRes(torch.nn.Module):
     def __init__(
         self,
@@ -347,5 +391,6 @@ class NeuralRadianceFieldHighRes(torch.nn.Module):
 volume_dict = {
     'sdf_volume': SDFVolume,
     'nerf': NeuralRadianceField,
-    'nerf_high_res': NeuralRadianceFieldHighRes
+    'nerf_high_res': NeuralRadianceFieldHighRes,
+    'nerf_no_view': NeuralRadianceFieldNoView
 }

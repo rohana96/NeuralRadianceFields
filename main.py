@@ -380,15 +380,14 @@ def train_nerf(
             with torch.no_grad():
                 test_images = render_images(
                     model, create_surround_cameras(4.0, n_poses=20, up=(0.0, 0.0, 1.0), focal_length=2.0),
-                    cfg.data.image_size, file_prefix='nerf_high_res'
+                    cfg.data.image_size, file_prefix='nerf_no_view'
                 )
-                imageio.mimsave('images/part_4.gif', [np.uint8(im * 255) for im in test_images])
+                imageio.mimsave('images/part_3_noview.gif', [np.uint8(im * 255) for im in test_images])
 
 
 @hydra.main(config_path='./configs', config_name='sphere')
 def main(cfg: DictConfig):
     os.chdir(hydra.utils.get_original_cwd())
-
     if cfg.type == 'render':
         render(cfg)
     elif cfg.type == 'train':
@@ -396,6 +395,8 @@ def main(cfg: DictConfig):
     elif cfg.type == 'train_nerf':
         train_nerf(cfg)
     elif cfg.type == 'train_nerf_high_res':
+        train_nerf(cfg)
+    elif cfg.type == 'train_nerf_med_high_res':
         train_nerf(cfg)
 
 

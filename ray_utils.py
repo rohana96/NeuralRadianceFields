@@ -168,5 +168,5 @@ def test_get_rays_from_pixels():
 
 if __name__ == '__main__':
     test_get_pixels_from_image()
-    # test_get_random_pixels_from_image()
-    # test_get_rays_from_pixels()
+    test_get_random_pixels_from_image()
+    test_get_rays_from_pixels()
