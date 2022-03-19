@@ -24,13 +24,25 @@ class VolumeRenderer(torch.nn.Module):
     ):
         # TODO (1.5): Compute transmittance using the equation described in the README
         n_rays, n_points, _ = deltas.shape
-        transmittance = torch.ones_like(rays_density)
+        transmittances = [] # = torch.ones(num_rays, 1, device=delta.device()) #torch.ones_like(rays_density)
+        weights = []
 
-        for j in range(1, n_points):
-            transmittance[:, j] = transmittance[:, j-1] * torch.exp(-1.0 * deltas[:, j-1] * rays_density[:, j-1])
 
+        for i in range(n_points):
+            # transmittance[:, j] = transmittance[:, j-1] * torch.exp(-1.0 * deltas[:, j-1] * rays_density[:, j-1])
+            if i == 0:
+                transmittance = torch.ones(n_rays, 1, device=deltas.device)
+            else:
+                transmittance = transmittances[i-1] * torch.exp(-rays_density[:, i-1] * deltas[:, i-1])
+            transmittances.append(transmittance)
+
+            weight = transmittance * (1. - torch.exp(-rays_density[:, i] * deltas[:, i]))
+            weights.append(weight)
         # TODO (1.5): Compute weight used for rendering from transmittance and density
-        weights = transmittance.detach() * (1 - torch.exp( -1.0 * rays_density * deltas))
+        weights = torch.stack(weights).to(deltas.device)
+        # transmittances = torch.stack(transmittances).to(deltas.device)
+        # weights = transmittances * (1 - torch.exp( -1.0 * rays_density * deltas))
+        weights = weights.permute(1, 0, 2)
         return weights
     
     def _aggregate(
@@ -51,7 +63,6 @@ class VolumeRenderer(torch.nn.Module):
         ray_bundle,
     ):
         B = ray_bundle.shape[0]
-
         # Process the chunks of rays.
         chunk_outputs = []
 
@@ -125,8 +136,6 @@ def test_compute_weights():
     for j in range(1, n_points):
         transmittance[:, j] = transmittance[:, j-1] * torch.exp(-1.0 * deltas[:, j-1] * rays_density[:, j-1])
     weights = transmittance * (1 - torch.exp( -1.0 * rays_density * deltas))
-    print(weights.shape)
-
 
 if __name__ == "__main__":
     test_compute_weights()

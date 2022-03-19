@@ -98,7 +98,6 @@ def get_pixels_from_image(image_size, camera=None):
     grid_y = -1.0 * ((2 / H) * y - 1.0)
     # Create grid of coordinates
     xy_grid = torch.cartesian_prod(grid_y, grid_x)
-    print(xy_grid.shape)
     xy_grid = torch.flip(xy_grid, dims = [1] ) # swap [:, :, 0], [:, :, 1]
     return xy_grid.cuda()
 

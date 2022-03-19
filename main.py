@@ -54,7 +54,6 @@ class Model(torch.nn.Module):
             cfg
     ):
         super().__init__()
-
         # Get implicit function from config
         self.implicit_fn = volume_dict[cfg.implicit_function.type](
             cfg.implicit_function
@@ -94,7 +93,7 @@ def render_images(
 ):
     all_images = []
     device = list(model.parameters())[0].device
-    points_sampler = StratifiedRaysampler(model.sampler)
+    points_sampler = model.sampler
 
     for cam_idx, camera in enumerate(cameras):
         print(f'Rendering image {cam_idx}')
@@ -109,14 +108,13 @@ def render_images(
             image_grid = vis_grid(xy_grid, image_size)
             plt.imsave('out/1_3/image_grid.png', np.uint8(image_grid * 255))
 
-
         # TODO (1.3): Visualize rays using vis_rays
         if cam_idx == 0 and file_prefix == '':
             ray_grid = vis_rays(ray_bundle, image_size)
             plt.imsave('out/1_3/ray_grid.png', np.uint8(ray_grid * 255))
 
         # TODO (1.4): Implement point sampling along rays in sampler.py
-        ray_bundle = points_sampler.forward(ray_bundle)
+        ray_bundle = points_sampler(ray_bundle)
 
 
         # TODO (1.4): Visualize sample points as point cloud
@@ -196,7 +194,7 @@ def train(
 
     # Train
     t_range = tqdm.tqdm(range(cfg.training.num_epochs))
-
+    criterion = torch.nn.MSELoss()
     for epoch in t_range:
         for iteration, batch in enumerate(train_dataloader):
             image, camera, camera_idx = batch[0].values()
@@ -212,7 +210,7 @@ def train(
             out = model(ray_bundle)
 
             # TODO (2.2): Calculate loss
-            loss = torch.linalg.norm(out['feature']- rgb_gt)
+            loss = criterion(out['feature'], rgb_gt)
 
             # Backprop
             optimizer.zero_grad()
@@ -307,11 +305,12 @@ def train_nerf(
     train_dataloader = torch.utils.data.DataLoader(
         train_dataset,
         batch_size=1,
-        shuffle=True,
+        shuffle=False,
         num_workers=0,
         collate_fn=trivial_collate,
     )
 
+    criterion = torch.nn.MSELoss()
     # Run the main training loop.
     for epoch in range(start_epoch, cfg.training.num_epochs):
         t_range = tqdm.tqdm(enumerate(train_dataloader))
@@ -332,9 +331,20 @@ def train_nerf(
 
             # Run model forward
             out = model(ray_bundle)
+            
+            # if iteration % 5 == 0:
+            #     with torch.no_grad():
+            #         test_images = render_images(
+            #             model, create_surround_cameras(4.0, n_poses=20, up=(0.0, 0.0, 1.0), focal_length=2.0),
+            #             cfg.data.image_size, file_prefix='nerf'
+            #         )
+
+            #         # import pdb
+            #         # pdb.set_trace()
+            #         imageio.mimsave('images/part_3_train.gif', [np.uint8(im * 255) for im in test_images])
 
             # TODO (3.1): Calculate loss
-            loss = torch.linalg.norm(out['feature']- rgb_gt)
+            loss = criterion(out['feature'], rgb_gt)
 
             # Take the training step.
             optimizer.zero_grad()
@@ -343,7 +353,6 @@ def train_nerf(
 
             t_range.set_description(f'Epoch: {epoch:04d}, Loss: {loss:.06f}')
             t_range.refresh()
-
         # Adjust the learning rate.
         lr_scheduler.step()
 
@@ -371,9 +380,9 @@ def train_nerf(
             with torch.no_grad():
                 test_images = render_images(
                     model, create_surround_cameras(4.0, n_poses=20, up=(0.0, 0.0, 1.0), focal_length=2.0),
-                    cfg.data.image_size, file_prefix='nerf'
+                    cfg.data.image_size, file_prefix='nerf_high_res'
                 )
-                imageio.mimsave('images/part_3.gif', [np.uint8(im * 255) for im in test_images])
+                imageio.mimsave('images/part_4.gif', [np.uint8(im * 255) for im in test_images])
 
 
 @hydra.main(config_path='./configs', config_name='sphere')
@@ -385,6 +394,8 @@ def main(cfg: DictConfig):
     elif cfg.type == 'train':
         train(cfg)
     elif cfg.type == 'train_nerf':
+        train_nerf(cfg)
+    elif cfg.type == 'train_nerf_high_res':
         train_nerf(cfg)
 
 
