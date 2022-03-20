@@ -30,39 +30,47 @@ Box side lengths: (2.0051, 1.5036, 1.5034)
 
 ##  Question 3. Optimizing a Neural Radiance Field (NeRF) 
 
-Rendering with positional encoding but without view dependence:
+Rendering WITH positional encoding and WITHOUT view dependence:
 
-![](images/part_3.gif)
+![](images/part_3_noview.gif)
+
 
 ##  Question 4. NeRF Extras
 
 ###  4.1 View Dependence Visualization
 
-Rendering with positional encoding and view dependence.
+Rendering WITH positional encoding and WITH view dependence:
 
 ![](images/part_3.gif)
 
 
-Comments:
+**Comments:**
 
-1. Light-dependent effects are rendered much better. For instace, the shadows on the base of the bulldozer and the 
-shine on the blade of the bulldozer when facing towards the light are more apparent. 
-2. Viewpoint conditioning is added after after density estimation i.e. much later in the network because:
+1. With view-dependency added fine-grained detail and lighting effects are rendered much better.
+For instance, the shadows on the base of the bulldozer and the shine on the blade of the bulldozer 
+when facing the light source are more apparent.
+2. Spurious flicker in the rendering is also reduced with view-dependency. 
+
+3. Viewpoint conditioning is added after density estimation i.e. much later in the network because:
     a) it only affects the color component and 
     b) exposing the whole network to view encoding may lead to over fitting.
-3. NeRF allows for arbitrary lighting and is rather too flexible. Without enforcing a physically-informed lighting model, 
+
+4. NeRF allows for arbitrary lighting and is rather too flexible. Without enforcing a physically-informed lighting model, 
 NeRF can tend to have low generalization power i.e. it can perform poorly when cameras are imprecise and viewpoints
-are sparse.
+are sparse. However, given dense set of precise views adding viewpoint dependence helps improve rendering quality.
 
 
 ###  4.3 High Resolution Imagery Visualization
 
 
-![](images/part_4.gif)
+| ![](images/part_4_med_highres.gif) | ![](images/part_4.gif) | 
+|:----------------------------------:|:----------------------:|
+|      *low-capacity network*   |  *high-capacity network*    |
 
 
+**Comments:**
 
-Comments:
+In general: 
 
 1. Higher fine-grained details ( for instance the lego base or the grey grill-like structure 
 on the front of the bulldozer and the shaft joints) are visible with high-res rendering. The effect of viewpoint conditioning 
@@ -74,7 +82,7 @@ is also much more apparent on the lego base and on the blade of the bulldozer wh
 
 I experimented with two configuration:
 
-High resolution (400 x 400) with medium network capacity:
+High resolution (400 x 400) with low network capacity:
 ```
   batch_size: 1024
   image_size: [400, 400]
@@ -99,7 +107,7 @@ High resolution (400 x 400) with high network capacity:
  ```
   
 As expected, the rendering with a higher network capacity has a sharper rendering. The smaller network also results
-in more spurious rendering which reflects as flickering in the redering (can be seen on a closer look). 
+in more spurious rendering which reflects as flickering in the rendering (can be seen on a closer look). 
     
 But what I find worth-noting is the fact that the network parameters had to increase more than 4 times in number 
 for what doesn't seem like a lot of improvement visually. This again points towards how the computation requirement 
