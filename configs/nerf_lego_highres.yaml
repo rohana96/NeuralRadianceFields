@@ -1,6 +1,6 @@
 seed: 1
 
-type: train_nerf_high_res
+type: train_nerf
 
 training:
   num_epochs: 250

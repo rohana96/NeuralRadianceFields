@@ -6,6 +6,9 @@ Rohan Agarwal (rohanaga)
 Late days: 2
 
 ## Question 1
+```
+Command: python main.py --config-name=box
+```
 ### 1.3. Ray sampling Visualizations
 
 ![](images/out/1_3/image_grid.png) ![](images/out/1_3/ray_grid.png)
@@ -19,7 +22,9 @@ Late days: 2
 ![](images/part_1.gif) ![](images/out/1_5/depth_map.png)
 
 ##  Question 2. Optimizing a basic implicit volume
-
+```
+Command: python main.py --config-name=train_box
+```
 ```
 Box center: (0.2502, 0.2506, -0.0005)
 Box side lengths: (2.0051, 1.5036, 1.5034)
@@ -27,9 +32,10 @@ Box side lengths: (2.0051, 1.5036, 1.5034)
 
 ![](images/part_2.gif)
 
-
 ##  Question 3. Optimizing a Neural Radiance Field (NeRF) 
-
+```
+Command: python main.py --config-name=nerf_lego_no_view
+```
 Rendering WITH positional encoding and WITHOUT view dependence:
 
 ![](images/part_3_noview.gif)
@@ -38,6 +44,9 @@ Rendering WITH positional encoding and WITHOUT view dependence:
 ##  Question 4. NeRF Extras
 
 ###  4.1 View Dependence Visualization
+```
+Command: python main.py --config-name=nerf_lego
+```
 
 Rendering WITH positional encoding and WITH view dependence:
 
@@ -62,6 +71,10 @@ are sparse. However, given dense set of precise views adding viewpoint dependenc
 
 ###  4.3 High Resolution Imagery Visualization
 
+```
+Command: python main.py --config-name=nerf_lego_med_highres
+Command: python main.py --config-name=nerf_lego_highres
+```
 
 | ![](images/part_4_med_highres.gif) | ![](images/part_4.gif) | 
 |:----------------------------------:|:----------------------:|
@@ -112,7 +125,3 @@ in more spurious rendering which reflects as flickering in the rendering (can be
 But what I find worth-noting is the fact that the network parameters had to increase more than 4 times in number 
 for what doesn't seem like a lot of improvement visually. This again points towards how the computation requirement 
 for training can scale significantly even for small improvements in rendering quality.
-  
-  
-
-```

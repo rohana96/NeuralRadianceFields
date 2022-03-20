@@ -5,13 +5,11 @@ import torch.nn as nn
 from ray_utils import RayBundle
 
 
-
-
 # Sphere SDF class
 class SphereSDF(torch.nn.Module):
     def __init__(
-        self,
-        cfg
+            self,
+            cfg
     ):
         super().__init__()
 
@@ -35,8 +33,8 @@ class SphereSDF(torch.nn.Module):
 # Box SDF class
 class BoxSDF(torch.nn.Module):
     def __init__(
-        self,
-        cfg
+            self,
+            cfg
     ):
         super().__init__()
 
@@ -68,8 +66,8 @@ sdf_dict = {
 # Converts SDF into density/feature volume
 class SDFVolume(torch.nn.Module):
     def __init__(
-        self,
-        cfg
+            self,
+            cfg
     ):
         super().__init__()
 
@@ -132,12 +130,12 @@ class SDFVolume(torch.nn.Module):
 
 class HarmonicEmbedding(torch.nn.Module):
     def __init__(
-        self,
-        in_channels: int = 3,
-        n_harmonic_functions: int = 6,
-        omega0: float = 1.0,
-        logspace: bool = True,
-        include_input: bool = True,
+            self,
+            in_channels: int = 3,
+            n_harmonic_functions: int = 6,
+            omega0: float = 1.0,
+            logspace: bool = True,
+            include_input: bool = True,
     ) -> None:
         super().__init__()
 
@@ -180,13 +178,13 @@ class LinearWithRepeat(torch.nn.Linear):
 
 class MLPWithInputSkips(torch.nn.Module):
     def __init__(
-        self,
-        n_layers: int,
-        input_dim: int,
-        output_dim: int,
-        skip_dim: int,
-        hidden_dim: int,
-        input_skips,
+            self,
+            n_layers: int,
+            input_dim: int,
+            output_dim: int,
+            skip_dim: int,
+            hidden_dim: int,
+            input_skips,
     ):
         super().__init__()
 
@@ -224,11 +222,12 @@ class MLPWithInputSkips(torch.nn.Module):
     def xavier_init(self, layer):
         torch.nn.init.xavier_uniform_(layer.weight.data)
 
+
 # TODO (3.1): Implement NeRF MLP
 class NeuralRadianceFieldNoView(torch.nn.Module):
     def __init__(
-        self,
-        cfg,
+            self,
+            cfg,
     ):
         super().__init__()
 
@@ -239,8 +238,8 @@ class NeuralRadianceFieldNoView(torch.nn.Module):
 
         embedding_dim_xyz = self.harmonic_embedding_xyz.output_dim
 
-        self.encoder = MLPWithInputSkips(n_layers=self.n_layers_xyz, input_dim=embedding_dim_xyz,output_dim=self.hidden_dim_xyz,
-                                            skip_dim=embedding_dim_xyz,hidden_dim=self.hidden_dim_xyz,input_skips=cfg.append_xyz)
+        self.encoder = MLPWithInputSkips(n_layers=self.n_layers_xyz, input_dim=embedding_dim_xyz, output_dim=self.hidden_dim_xyz,
+                                         skip_dim=embedding_dim_xyz, hidden_dim=self.hidden_dim_xyz, input_skips=cfg.append_xyz)
 
         self.fc_sigma = nn.Linear(self.hidden_dim_xyz, 1)
 
@@ -251,7 +250,6 @@ class NeuralRadianceFieldNoView(torch.nn.Module):
         self.sigmoid = nn.Sigmoid()
 
     def forward(self, ray_bundle):
-
         n_rays, n_points, _ = ray_bundle.sample_points.shape
 
         xyz = ray_bundle.sample_points
@@ -271,8 +269,8 @@ class NeuralRadianceFieldNoView(torch.nn.Module):
 # TODO (4.1): Implement NeRF MLP
 class NeuralRadianceField(torch.nn.Module):
     def __init__(
-        self,
-        cfg,
+            self,
+            cfg,
     ):
         super().__init__()
 
@@ -286,9 +284,8 @@ class NeuralRadianceField(torch.nn.Module):
         embedding_dim_xyz = self.harmonic_embedding_xyz.output_dim
         embedding_dim_dir = self.harmonic_embedding_dir.output_dim
 
-
-        self.encoder = MLPWithInputSkips(n_layers=self.n_layers_xyz, input_dim=embedding_dim_xyz,output_dim=self.hidden_dim_xyz,
-                                            skip_dim=embedding_dim_xyz,hidden_dim=self.hidden_dim_xyz,input_skips=cfg.append_xyz)
+        self.encoder = MLPWithInputSkips(n_layers=self.n_layers_xyz, input_dim=embedding_dim_xyz, output_dim=self.hidden_dim_xyz,
+                                         skip_dim=embedding_dim_xyz, hidden_dim=self.hidden_dim_xyz, input_skips=cfg.append_xyz)
 
         self.fc_sigma = nn.Linear(self.hidden_dim_xyz, 1)
 
@@ -299,7 +296,6 @@ class NeuralRadianceField(torch.nn.Module):
         self.sigmoid = nn.Sigmoid()
 
     def forward(self, ray_bundle):
-
         n_rays, n_points, _ = ray_bundle.sample_points.shape
 
         xyz = ray_bundle.sample_points
@@ -310,12 +306,11 @@ class NeuralRadianceField(torch.nn.Module):
 
         direction = direction.unsqueeze(1)
         direction = direction.repeat(1, n_points, 1)
-        
 
         out = self.encoder(xyz, xyz)
         sigma = self.relu(self.fc_sigma(out))
 
-        in_rgb = torch.cat([out, direction], dim = -1)
+        in_rgb = torch.cat([out, direction], dim=-1)
         out = self.relu(self.layer7(in_rgb))
         rgb = self.sigmoid(self.fc_rgb(out))
 
@@ -329,8 +324,8 @@ class NeuralRadianceField(torch.nn.Module):
 # TODO (4.3): Implement NeRF MLP
 class NeuralRadianceFieldHighRes(torch.nn.Module):
     def __init__(
-        self,
-        cfg,
+            self,
+            cfg,
     ):
         super().__init__()
 
@@ -344,9 +339,8 @@ class NeuralRadianceFieldHighRes(torch.nn.Module):
         embedding_dim_xyz = self.harmonic_embedding_xyz.output_dim
         embedding_dim_dir = self.harmonic_embedding_dir.output_dim
 
-
-        self.encoder = MLPWithInputSkips(n_layers=self.n_layers_xyz, input_dim=embedding_dim_xyz,output_dim=self.hidden_dim_xyz,
-                                            skip_dim=embedding_dim_xyz,hidden_dim=self.hidden_dim_xyz,input_skips=cfg.append_xyz)
+        self.encoder = MLPWithInputSkips(n_layers=self.n_layers_xyz, input_dim=embedding_dim_xyz, output_dim=self.hidden_dim_xyz,
+                                         skip_dim=embedding_dim_xyz, hidden_dim=self.hidden_dim_xyz, input_skips=cfg.append_xyz)
 
         self.fc_sigma = nn.Linear(self.hidden_dim_xyz, 1)
         self.xavier_init(self.fc_sigma)
@@ -354,12 +348,11 @@ class NeuralRadianceFieldHighRes(torch.nn.Module):
         self.xavier_init(self.layer7)
         self.fc_rgb = nn.Linear(cfg.n_hidden_neurons_dir, 3)
         self.xavier_init(self.fc_rgb)
-        
+
         self.relu = nn.ReLU()
         self.sigmoid = nn.Sigmoid()
 
     def forward(self, ray_bundle):
-
         n_rays, n_points, _ = ray_bundle.sample_points.shape
 
         xyz = ray_bundle.sample_points
@@ -370,12 +363,11 @@ class NeuralRadianceFieldHighRes(torch.nn.Module):
 
         direction = direction.unsqueeze(1)
         direction = direction.repeat(1, n_points, 1)
-        
 
         out = self.encoder(xyz, xyz)
         sigma = self.relu(self.fc_sigma(out))
 
-        in_rgb = torch.cat([out, direction], dim = -1)
+        in_rgb = torch.cat([out, direction], dim=-1)
         out = self.relu(self.layer7(in_rgb))
         rgb = self.sigmoid(self.fc_rgb(out))
 
@@ -387,6 +379,7 @@ class NeuralRadianceFieldHighRes(torch.nn.Module):
 
     def xavier_init(self, layer):
         torch.nn.init.xavier_uniform_(layer.weight.data)
+
 
 volume_dict = {
     'sdf_volume': SDFVolume,
