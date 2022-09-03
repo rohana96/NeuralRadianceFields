@@ -6,9 +6,6 @@ Assignment 3
 <img src="https://raw.githubusercontent.com/learning3d/learning3d.github.io/main/data/late_days/two.png"   width=200px height=200px>
 </html>
 
-Rohan Agarwal (rohanaga)
-
-Late days: 2
 
 ## Question 1
 ```
